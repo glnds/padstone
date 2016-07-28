@@ -1,9 +1,12 @@
+variable "ami" {}
 variable "subnet" {}
 variable "security_group" {}
 variable "name" {}
 variable "stack" {}
 variable "zone_id" {}
-
+variable "eip_allocation_id" {}
+variable "eip_ip" {}
+variable "dns_name" {}
 
 provider "aws" {
   region = "eu-west-1"
@@ -11,12 +14,12 @@ provider "aws" {
 }
 
 resource "aws_instance" "playground" {
-  ami = "ami-7abd0209"
+  ami = "${var.ami}"
   instance_type = "t2.micro"
   subnet_id = "${var.subnet}"
-  disable_api_termination = true
+  disable_api_termination = false
   key_name = "glnds"
-  associate_public_ip_address = true
+  associate_public_ip_address = false
 
   vpc_security_group_ids = ["${var.security_group}"]
 
@@ -33,10 +36,15 @@ resource "aws_instance" "playground" {
   }
 }
 
+resource "aws_eip_association" "eip_assoc" {
+  instance_id = "${aws_instance.playground.id}"
+  allocation_id = "${var.eip_allocation_id}"
+}
+
 resource "aws_route53_record" "playground" {
    zone_id = "${var.zone_id}"
-   name = "playground"
+   name = "${var.dns_name}"
    type = "A"
    ttl = "300"
-   records = ["${aws_instance.playground.public_ip}"]
+   records = ["${var.eip_ip}"]
 }
